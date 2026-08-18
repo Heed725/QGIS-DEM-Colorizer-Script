@@ -1,27 +1,26 @@
 # QGIS DEM Colorizer Script
 
-A QGIS Processing Toolbox script for applying discrete elevation classes and colors directly to a DEM raster loaded in the current QGIS project.
+A simple standalone PyQGIS script that applies an exact discrete elevation color scheme to the currently selected DEM raster in QGIS.
 
-The script includes a built-in Tanzania elevation scheme, but the class breaks, colors, transparency threshold, and legend labels can also be edited before running.
+This repository now uses the standalone script:
 
-## Main features
+```text
+Tanzania_DEM_Exact_Style_QGIS_3_40.py
+```
 
-- Applies colors directly to the visible DEM layer in the current QGIS project.
-- Uses `QgsSingleBandPseudoColorRenderer` with a discrete color ramp.
-- Runs in the QGIS main thread using `FlagNoThreading` so the project layer and map canvas can be updated safely.
-- Automatically refreshes the layer legend and map canvas after styling.
-- Includes a built-in Tanzania DEM color scheme enabled by default.
-- Allows the user to untick the default scheme and define custom elevation classes.
-- Supports editable upper elevation limits, hexadecimal colors, and legend labels.
-- Supports adding and removing custom class rows.
-- Makes values below a chosen threshold transparent in custom mode.
-- Can save the resulting symbology as the raster's default style.
-- Can export a `.qml` style beside the source DEM.
-- Designed for QGIS 3.38, 3.40, 3.44 and compatible QGIS 3.x releases.
+The previous Processing Toolbox version has been removed.
 
-## Default Tanzania elevation colors
+## What the script does
 
-| Elevation class | Color |
+The script takes the raster currently selected in the QGIS Layers panel and changes its renderer to `singlebandpseudocolor` with fixed discrete elevation breaks.
+
+It does not create a new raster and does not alter DEM cell values. It only changes the raster symbology in QGIS.
+
+It also refreshes the layer legend and map canvas immediately after applying the style.
+
+## Default elevation classes
+
+| Elevation | Color |
 |---|---|
 | Below 0 m | Transparent |
 | 0–100 m | `#A9CD6F` |
@@ -34,273 +33,402 @@ The script includes a built-in Tanzania elevation scheme, but the class breaks, 
 | 3001–4000 m | `#B15E38` |
 | Above 4000 m | `#A65235` |
 
-The built-in final break is 5786 m, matching the Tanzania DEM used during development.
-
-## File
-
-The Processing script is:
+The script was prepared around a Tanzania DEM whose approximate range was:
 
 ```text
-dynamic_dem_colorizer_processing_v5_FIXED.py
+Minimum: -776 m
+Maximum: 5786 m
 ```
 
-## Installation
-
-### Method 1: Copy into the QGIS Processing scripts folder
-
-1. Download `dynamic_dem_colorizer_processing_v5_FIXED.py`.
-2. Open QGIS.
-3. Go to:
-
-   **Settings → User Profiles → Open Active Profile Folder**
-
-4. Open the following folder inside the profile:
-
-```text
-processing\scripts
-```
-
-5. Copy `dynamic_dem_colorizer_processing_v5_FIXED.py` into that folder.
-6. Return to QGIS.
-7. Open the **Processing Toolbox**.
-8. Refresh the Processing scripts if necessary, or restart QGIS.
-9. Look under:
-
-```text
-Cartography
-└── Dynamic DEM Colorizer - FIXED
-```
-
-### Typical Windows profile location
-
-A common QGIS profile path is similar to:
-
-```text
-C:\Users\YOUR_USERNAME\AppData\Roaming\QGIS\QGIS3\profiles\default\processing\scripts
-```
-
-The exact profile can differ, so using **Open Active Profile Folder** is safer.
-
-## Basic use
-
-1. Load your DEM `.tif` into QGIS.
-2. Open **Processing Toolbox**.
-3. Search for:
-
-```text
-Dynamic DEM Colorizer - FIXED
-```
-
-4. Choose the DEM raster.
-5. Leave **Use built-in Tanzania default colors** checked if you want the default scheme.
-6. Leave **Save resulting symbology as raster default style** checked if you want QGIS to remember the style.
-7. Leave **Also export QML beside the DEM** checked if you want a reusable `.qml` file.
-8. Click **Run**.
-
-The DEM should immediately change to the pseudocolor elevation rendering in the map canvas.
-
-## Custom elevation classes
-
-To define your own classes:
-
-1. Untick:
-
-```text
-Use built-in Tanzania default colors
-```
-
-2. Set the value for:
-
-```text
-Custom mode: make values below this elevation transparent (m)
-```
-
-3. Edit the custom class table.
-
-The table has three columns:
-
-| Column | Meaning |
-|---|---|
-| Upper limit (m) | Highest raster value in that class |
-| Color (#RRGGBB) | Hexadecimal QGIS color |
-| Legend label | Text shown in the layer legend |
-
-Example:
-
-| Upper limit | Color | Legend label |
-|---:|---|---|
-| 100 | `#A9CD6F` | 0 - 100 m |
-| 200 | `#CCDD89` | 101 - 200 m |
-| 500 | `#F7E8A3` | 201 - 500 m |
-| 1000 | `#F9D58D` | 501 - 1000 m |
-
-The algorithm automatically sorts custom class rows by elevation.
-
-Duplicate upper limits are rejected because every discrete break must be unique.
-
-## How the class breaks work
-
-The script uses QGIS discrete pseudocolor rendering. Each class value acts as the upper break for that class.
-
-For example:
-
-```text
-100   #A9CD6F   0 - 100 m
-200   #CCDD89   101 - 200 m
-500   #F7E8A3   201 - 500 m
-```
-
-is interpreted as sequential discrete elevation classes ending at 100 m, 200 m, and 500 m.
-
-## Transparency
-
-In the built-in Tanzania mode:
-
-```text
-Below 0 m = transparent
-```
-
-In custom mode, the user can change the transparency threshold.
-
-For example, setting:
-
-```text
-Transparent below = 10
-```
-
-will make values below approximately 10 m transparent before the visible custom classes begin.
-
-## Save as default style
-
-The option:
-
-```text
-Save resulting symbology as raster default style
-```
-
-is enabled by default.
-
-When enabled, the script calls QGIS `saveDefaultStyle()` after applying the renderer.
-
-If you do not want the style saved as the raster default, untick this option before running.
-
-## Export QML
-
-The option:
-
-```text
-Also export QML beside the DEM
-```
-
-is enabled by default.
-
-For a raster such as:
-
-```text
-tanzania_elevation.tif
-```
-
-the script attempts to create:
-
-```text
-tanzania_elevation_Dynamic_DEM_Style.qml
-```
-
-in the same directory as the raster.
-
-The QML can later be loaded from:
-
-**Layer Properties → Style → Load Style**
-
-## Why this version uses `FlagNoThreading`
-
-QGIS Processing algorithms normally may execute in a background thread.
-
-This script modifies the renderer of an existing project layer and refreshes the QGIS interface, so it requests execution in the main QGIS thread with `FlagNoThreading`.
-
-This helps ensure that the visible project raster, legend, and map canvas are updated rather than only styling a temporary Processing layer reference.
-
-## How the script finds the visible DEM
-
-The tool first checks whether the selected raster's layer ID exists in the current `QgsProject`.
-
-If necessary, it then compares raster source paths to find matching project layers.
-
-This means the style is applied to the raster actually visible in your Layers panel.
-
-## Processing log verification
-
-After running, the Processing log reports information similar to:
-
-```text
-Found 1 raster layer(s) to colorize.
-Color source: Built-in Tanzania default colors
-Colorized project layer: tanzania_elevation
-
-STYLE VERIFICATION
-tanzania_elevation renderer = singlebandpseudocolor
-```
-
-It also prints the final RGBA class values and labels.
-
-## Troubleshooting
-
-### Tool does not appear in Processing Toolbox
-
-Confirm the Python file is inside:
-
-```text
-processing\scripts
-```
-
-Then refresh Processing scripts or restart QGIS.
-
-### DEM does not change color
-
-Make sure the DEM is already loaded in the QGIS project and select the same raster in the Processing algorithm.
-
-After running, check the Processing log. You should see:
-
-```text
-renderer = singlebandpseudocolor
-```
-
-### Colors disappear after clicking Classify
-
-Do not click **Classify** after the script runs. The script already creates the required discrete break values.
-
-Running QGIS classification afterward can replace the custom break values.
-
-### QML is not created
-
-Check that the folder containing the DEM is writable. If the raster directory is read-only, QGIS may not be able to save a QML beside it.
-
-### Default style cannot be saved
-
-The style is still applied to the current project layer even if the default-style save operation fails. Check the QGIS Processing log for the exact message.
+Values below zero are transparent.
 
 ## Requirements
 
-- QGIS 3.x
-- PyQGIS
-- A raster DEM, normally a single-band elevation TIFF
+- QGIS 3.38, 3.40, 3.44 or another compatible QGIS 3.x release
+- A valid single-band DEM raster loaded in QGIS
+- QGIS Python Console
 
-No third-party Python packages are required.
+No external Python packages are required.
 
 ## Repository structure
 
 ```text
 QGIS-DEM-Colorizer-Script/
-├── dynamic_dem_colorizer_processing_v5_FIXED.py
+├── Tanzania_DEM_Exact_Style_QGIS_3_40.py
 └── README.md
 ```
 
-## License
+## How to use
 
-No license file has been added yet. Add a license if you plan to redistribute or publish the script under explicit reuse terms.
+### 1. Download the script
 
-## Author / repository
+Download:
 
-Repository: `Heed725/QGIS-DEM-Colorizer-Script`
+```text
+Tanzania_DEM_Exact_Style_QGIS_3_40.py
+```
 
-Built as a reusable QGIS Processing workflow for DEM elevation cartography.
+For example, save it in:
+
+```text
+C:\Users\Admin\Downloads\
+```
+
+### 2. Load your DEM into QGIS
+
+Open QGIS and add your DEM TIFF or other supported elevation raster.
+
+For example:
+
+```text
+tanzania_elevation.tif
+```
+
+### 3. Select the DEM in the Layers panel
+
+Click the DEM layer so it becomes the active layer.
+
+This is important because the script uses:
+
+```python
+layer = iface.activeLayer()
+```
+
+If no layer is selected, the script stops with an error.
+
+### 4. Open the QGIS Python Console
+
+Go to:
+
+**Plugins → Python Console**
+
+### 5. Run the script
+
+If the file is in your Downloads folder, run:
+
+```python
+exec(open(r"C:\Users\Admin\Downloads\Tanzania_DEM_Exact_Style_QGIS_3_40.py").read())
+```
+
+Change the path if your script is stored elsewhere.
+
+## Expected result
+
+The DEM should immediately change from grayscale or its existing raster style to the Tanzania elevation color scheme.
+
+The QGIS Python Console should print output similar to:
+
+```text
+==============================================
+TANZANIA DEM STYLE APPLIED SUCCESSFULLY
+==============================================
+Layer: tanzania_elevation
+Renderer: singlebandpseudocolor
+Interpolation: DISCRETE
+
+Exact classes loaded:
+Below 0 m            | break=-1e-06 | RGBA=0,0,0,0
+0 - 100 m            | break=100.0 | RGBA=169,205,111,255
+101 - 200 m          | break=200.0 | RGBA=204,221,137,255
+201 - 500 m          | break=500.0 | RGBA=247,232,163,255
+...
+```
+
+The important verification lines are:
+
+```text
+Renderer: singlebandpseudocolor
+Interpolation: DISCRETE
+```
+
+## How the discrete classes work
+
+The script uses `QgsColorRampShader` with:
+
+```python
+Qgis.ShaderInterpolationMethod.Discrete
+```
+
+Each class value acts as an upper break.
+
+For example:
+
+```python
+QgsColorRampShader.ColorRampItem(
+    100.0,
+    QColor("#A9CD6F"),
+    "0 - 100 m"
+)
+```
+
+means values up to the 100 m break use the first green class.
+
+The next item:
+
+```python
+QgsColorRampShader.ColorRampItem(
+    200.0,
+    QColor("#CCDD89"),
+    "101 - 200 m"
+)
+```
+
+covers the next elevation interval up to 200 m.
+
+## Transparency below 0 m
+
+The first shader item is:
+
+```python
+QgsColorRampShader.ColorRampItem(
+    -0.000001,
+    QColor(0, 0, 0, 0),
+    "Below 0 m"
+)
+```
+
+The alpha value is zero, so elevations below 0 m are transparent.
+
+This is useful when the DEM contains bathymetry, negative coastal values, or unwanted values below sea level.
+
+## Editing the elevation breaks
+
+The classes are defined inside the `items` list.
+
+For example:
+
+```python
+items = [
+    QgsColorRampShader.ColorRampItem(
+        -0.000001,
+        QColor(0, 0, 0, 0),
+        "Below 0 m"
+    ),
+
+    QgsColorRampShader.ColorRampItem(
+        100.0,
+        QColor("#A9CD6F"),
+        "0 - 100 m"
+    ),
+
+    QgsColorRampShader.ColorRampItem(
+        200.0,
+        QColor("#CCDD89"),
+        "101 - 200 m"
+    ),
+]
+```
+
+To change a class, edit the upper break, color, or label.
+
+For example, to change the first visible class to 0–150 m:
+
+```python
+QgsColorRampShader.ColorRampItem(
+    150.0,
+    QColor("#A9CD6F"),
+    "0 - 150 m"
+)
+```
+
+## Editing the colors
+
+Colors use hexadecimal values inside `QColor()`.
+
+Example:
+
+```python
+QColor("#A9CD6F")
+```
+
+You can replace the hex value with another valid color.
+
+For example:
+
+```python
+QColor("#4CAF50")
+```
+
+## Editing the labels
+
+The third value in every `ColorRampItem` is the legend label.
+
+Example:
+
+```python
+"1001 - 1500 m"
+```
+
+You can rename it without changing the actual elevation break.
+
+For example:
+
+```python
+"Highlands 1001 - 1500 m"
+```
+
+## Adding another class
+
+Add another `QgsColorRampShader.ColorRampItem` in the correct elevation order.
+
+Example:
+
+```python
+QgsColorRampShader.ColorRampItem(
+    5000.0,
+    QColor("#8C3B2A"),
+    "4001 - 5000 m"
+),
+```
+
+Then adjust the final class if needed.
+
+## Highest elevation class
+
+The final item uses a very large upper value:
+
+```python
+QgsColorRampShader.ColorRampItem(
+    1000000000.0,
+    QColor("#A65235"),
+    "Above 4000 m"
+)
+```
+
+This ensures that all raster values above 4000 m receive the last dark-brown color, including values higher than the DEM used during development.
+
+## Classification limits
+
+The script currently sets:
+
+```python
+renderer.setClassificationMin(-776.0)
+renderer.setClassificationMax(5786.0)
+```
+
+These values match the Tanzania DEM used during development.
+
+If your DEM has a very different elevation range, you can change these two values.
+
+For example:
+
+```python
+renderer.setClassificationMin(0.0)
+renderer.setClassificationMax(8849.0)
+```
+
+The actual fixed class breaks in the `items` list are still what determine the colors.
+
+## Do not click Classify afterward
+
+After the script applies the style, do not press **Classify** in the QGIS raster symbology panel unless you intentionally want QGIS to rebuild the classes.
+
+The script already creates the exact discrete break values.
+
+Pressing **Classify** can replace them with automatically calculated intervals.
+
+## Troubleshooting
+
+### No layer selected
+
+If the console shows an error saying no layer is selected, click the DEM in the Layers panel and run the script again.
+
+### Selected layer is not a raster
+
+Make sure the active layer is your DEM raster and not a vector layer, basemap, boundary shapefile, or other layer type.
+
+### DEM does not change color
+
+Check the Python Console output.
+
+You should see:
+
+```text
+Renderer: singlebandpseudocolor
+Interpolation: DISCRETE
+```
+
+If you do, open:
+
+**Layer Properties → Symbology**
+
+and confirm that the render type is **Singleband pseudocolor**.
+
+### Negative values are not visible
+
+This is intentional. Values below 0 m are assigned a fully transparent color.
+
+If you want negative values visible, replace:
+
+```python
+QColor(0, 0, 0, 0)
+```
+
+with an opaque color such as:
+
+```python
+QColor("#5DADE2")
+```
+
+### Python Console reports an enum error
+
+The current script is intended for modern QGIS 3.x versions using:
+
+```python
+Qgis.ShaderInterpolationMethod.Discrete
+Qgis.ShaderClassificationMethod.Continuous
+```
+
+If using a significantly older QGIS version, these enum names may differ.
+
+## Main PyQGIS classes used
+
+The script relies on:
+
+```python
+QgsRasterLayer
+QgsRasterShader
+QgsColorRampShader
+QgsSingleBandPseudoColorRenderer
+QColor
+iface
+```
+
+The renderer is created with:
+
+```python
+renderer = QgsSingleBandPseudoColorRenderer(
+    layer.dataProvider(),
+    1,
+    raster_shader
+)
+```
+
+and applied with:
+
+```python
+layer.setRenderer(renderer)
+layer.triggerRepaint()
+```
+
+The QGIS interface is then refreshed using:
+
+```python
+iface.layerTreeView().refreshLayerSymbology(layer.id())
+iface.mapCanvas().refresh()
+```
+
+## Notes
+
+- The script styles band 1 of the selected raster.
+- The script does not modify raster pixel values.
+- The script does not write a new TIFF.
+- The script does not require a QML or TXT color-map file.
+- The style exists in the current QGIS layer/project after the script runs.
+- If you want to reuse the applied style, you can save it from QGIS using **Layer Properties → Style → Save Style**.
+
+## Repository
+
+`Heed725/QGIS-DEM-Colorizer-Script`
+
+This repository is intended as a simple reusable PyQGIS example for applying fixed DEM elevation classes directly from the QGIS Python Console.
